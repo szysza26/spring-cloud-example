@@ -1,0 +1,53 @@
+version: '3.8'
+services: 
+  eureka:
+    build: 
+      context: .
+      dockerfile: docker/eureka/Dockerfile
+    ports:
+      - 8761:8761
+  bikes:
+    build: 
+      context: .
+      dockerfile: docker/bikes/Dockerfile
+    depends_on:
+      - eureka
+      - bikes-db
+  bikes-db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+  test:
+    build: 
+      context: .
+      dockerfile: docker/test/Dockerfile
+    depends_on:
+      - eureka
+      - bikes
+      - rabbitmq
+  notifications:
+    build: 
+      context: .
+      dockerfile: docker/notifications/Dockerfile
+    depends_on:
+      - eureka
+      - rabbitmq
+  gateway:
+    build: 
+      context: .
+      dockerfile: docker/gateway/Dockerfile
+    ports:
+      - 9000:9000
+    depends_on:
+      - eureka
+      - bikes
+      - test
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
